@@ -92,6 +92,16 @@ H5_ATTR_VOXELMAX:str = 'voxel_max'
 H5_ATTR_VOXELCENTER:str = 'voxel_center'
 H5_ATTR_VOXELORIGIN:str = 'voxel_origin'
 
+AUG_AFFINE_ANGLE:str = 'affine_angle'
+AUG_AFFINE_SCALE:str = 'affine_scale'
+AUG_TRANSLATION_HSHIFT:str = 'translation_hshift'
+AUG_TRANSLATION_VSHIFT:str = 'translation_vshift'
+AUG_FLIP_H:str = 'flip_h'
+AUG_FLIP_V:str = 'flip_v'
+AUG_CUTOUT_DO:str = 'cutout_do'
+AUG_CUTOUT_X:str = 'cutout_x'
+AUG_CUTOUT_Y:str = 'cutout_y'
+
 DTYPE_NUMPY:Dict[str, np.dtype] = {
     TYPE_FLOAT16: np.float16,
     TYPE_FLOAT32: np.float32,
