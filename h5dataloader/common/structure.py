@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from typing import Dict, List, Tuple, Union
+from typing import Any, Dict, List, NamedTuple, Tuple, Union
 import numpy as np
 import cv2
 
@@ -98,6 +98,13 @@ AUG_TRANSLATION_HSHIFT:str = 'translation_hshift'
 AUG_TRANSLATION_VSHIFT:str = 'translation_vshift'
 AUG_FLIP_H:str = 'flip_h'
 AUG_FLIP_V:str = 'flip_v'
+
+class Data(NamedTuple):
+    data: np.ndarray
+    type: str
+
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
+        return super().__call__(*args, **kwds)
 
 DTYPE_NUMPY:Dict[str, np.dtype] = {
     TYPE_FLOAT16: np.float16,
