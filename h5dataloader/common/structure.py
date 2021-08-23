@@ -98,9 +98,6 @@ AUG_TRANSLATION_HSHIFT:str = 'translation_hshift'
 AUG_TRANSLATION_VSHIFT:str = 'translation_vshift'
 AUG_FLIP_H:str = 'flip_h'
 AUG_FLIP_V:str = 'flip_v'
-AUG_CUTOUT_DO:str = 'cutout_do'
-AUG_CUTOUT_X:str = 'cutout_x'
-AUG_CUTOUT_Y:str = 'cutout_y'
 
 DTYPE_NUMPY:Dict[str, np.dtype] = {
     TYPE_FLOAT16: np.float16,
