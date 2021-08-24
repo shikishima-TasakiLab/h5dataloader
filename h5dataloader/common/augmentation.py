@@ -10,10 +10,6 @@ class BoundingBox(NamedTuple):
     x2: int
     y2: int
 
-class ValueRange(NamedTuple):
-    min: Union[int, float]
-    max: Union[int, float]
-
 class Augmentation():
 
     @staticmethod

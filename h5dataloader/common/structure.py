@@ -103,9 +103,11 @@ AUG_FLIP_V:str = 'flip_v'
 class Data(NamedTuple):
     data: np.ndarray
     type: str
+    normalized: bool = False
 
-    def __call__(self, *args: Any, **kwds: Any) -> Any:
-        return super().__call__(*args, **kwds)
+class ValueRange(NamedTuple):
+    min: Union[int, float]
+    max: Union[int, float]
 
 DTYPE_NUMPY:Dict[str, np.dtype] = {
     TYPE_FLOAT16: np.float16,
