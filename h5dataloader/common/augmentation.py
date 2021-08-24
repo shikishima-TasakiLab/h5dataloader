@@ -2,6 +2,7 @@ from typing import Dict, Tuple, NamedTuple
 import numpy as np
 import cv2
 from .structure import *
+from .convert import *
 
 class BoundingBox(NamedTuple):
     x1: int
@@ -214,8 +215,7 @@ class Augmentation():
                 tmp_itr = step_itr
                 tmp_factor = np.random.rand() * (factor_range.max - factor_range.min) + factor_range.min
 
-            # TODO: src.data -> Grayscale -> Mean
-            gray_mean = 127.
+            gray_mean = to_mono8(src).data.mean()
 
             return Data(
                 data=np.clip(gray_mean * (1.0 - tmp_factor) + src.data * tmp_factor, dst_range.min, dst_range.max).astype(DTYPE_NUMPY[src.type]),
@@ -235,8 +235,7 @@ class Augmentation():
                 tmp_itr = step_itr
                 tmp_factor = np.random.rand() * (factor_range.max - factor_range.min) + factor_range.min
 
-            # TODO: src.data -> Grayscale
-            gray = 127.
+            gray = to(to_mono8(src), src.type)
 
             return Data(
                 data=np.clip(gray * (1.0 - tmp_factor) + src.data * tmp_factor, dst_range.min, dst_range.max).astype(DTYPE_NUMPY[src.type]),
@@ -244,3 +243,44 @@ class Augmentation():
             )
 
         return _adjust_saturation
+
+    @staticmethod
+    def adjust_hue(factor_range: ValueRange = (0.5, 1.5)):
+        tmp_itr: int = None
+        tmp_factor: float = None
+
+        def _adjust_hue(step_itr: int, src: Data) -> Data:
+            nonlocal tmp_itr, tmp_factor
+            if tmp_itr != step_itr:
+                tmp_itr = step_itr
+                tmp_factor = np.random.rand() * (factor_range.max - factor_range.min) + factor_range.min
+
+            hsv = to_hsv8(src)
+            hsv.data[:,:,0] += np.uint8(tmp_factor * 255)
+
+            return to(hsv, src.type)
+
+        return _adjust_hue
+
+    @staticmethod
+    def adjust_gamma(gamma_range: ValueRange = (0.5, 1.5), gain_range: ValueRange = (0.5, 1.5), dst_range: ValueRange = (0, 255)):
+        if gain_range.min < 0.0 or gain_range.max < 0.0:
+            raise ValueError('`gain_range.min >= 0.0`, `gain_range.max >= 0.0`')
+        tmp_itr: int = None
+        tmp_gamma: float = None
+        tmp_gain: float = None
+
+        def _adjust_gamma(step_itr: int, src: Data) -> Data:
+            nonlocal tmp_itr, tmp_gamma, tmp_gain
+            if tmp_itr != step_itr:
+                tmp_itr = step_itr
+                tmp_gamma = np.random.rand() * (gamma_range.max - gamma_range.min) + gamma_range.min
+                tmp_gain = np.random.rand() * (gain_range.max - gain_range.min) + gain_range.min
+
+            img = np.float32(src.data)
+            img = dst_range.max * tmp_gain * np.power(img / dst_range.max, tmp_gamma)
+            img = DTYPE_NUMPY[src.type](np.clip(img, dst_range.min, dst_range.max))
+
+            return Data(img, src.type)
+
+        return _adjust_gamma
