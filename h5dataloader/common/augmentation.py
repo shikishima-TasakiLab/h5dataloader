@@ -190,7 +190,7 @@ class Augmentation():
         return _bbox_masking
 
     @staticmethod
-    def adjust_brightness(factor_range: ValueRange = (0.5, 1.5), dst_range: ValueRange = (0, 255)):
+    def adjust_brightness(factor_range: ValueRange = ValueRange(0.5, 1.5), dst_range: ValueRange = ValueRange(0, 255)):
         tmp_itr: int = None
         tmp_factor: float = None
 
@@ -205,7 +205,7 @@ class Augmentation():
         return _adjust_brightness
 
     @staticmethod
-    def adjust_contrast(factor_range: ValueRange = (0.5, 1.5), dst_range: ValueRange = (0, 255)):
+    def adjust_contrast(factor_range: ValueRange = ValueRange(0.5, 1.5), dst_range: ValueRange = ValueRange(0, 255)):
         tmp_itr: int = None
         tmp_factor: float = None
 
@@ -225,7 +225,7 @@ class Augmentation():
         return _adjust_contrast
 
     @staticmethod
-    def adjust_saturation(factor_range: ValueRange = (0.5, 1.5), dst_range: ValueRange = (0, 255)):
+    def adjust_saturation(factor_range: ValueRange = ValueRange(0.5, 1.5), dst_range: ValueRange = ValueRange(0, 255)):
         tmp_itr: int = None
         tmp_factor: float = None
 
@@ -245,7 +245,7 @@ class Augmentation():
         return _adjust_saturation
 
     @staticmethod
-    def adjust_hue(factor_range: ValueRange = (0.5, 1.5)):
+    def adjust_hue(factor_range: ValueRange = ValueRange(0.5, 1.5)):
         tmp_itr: int = None
         tmp_factor: float = None
 
@@ -263,7 +263,7 @@ class Augmentation():
         return _adjust_hue
 
     @staticmethod
-    def adjust_gamma(gamma_range: ValueRange = (0.5, 1.5), gain_range: ValueRange = (0.5, 1.5), dst_range: ValueRange = (0, 255)):
+    def adjust_gamma(gamma_range: ValueRange = ValueRange(0.5, 1.5), gain_range: ValueRange = ValueRange(0.5, 1.5), dst_range: ValueRange = ValueRange(0, 255)):
         if gain_range.min < 0.0 or gain_range.max < 0.0:
             raise ValueError('`gain_range.min >= 0.0`, `gain_range.max >= 0.0`')
         tmp_itr: int = None
