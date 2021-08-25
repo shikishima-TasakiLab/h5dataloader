@@ -211,7 +211,7 @@ class Augmentation():
                 tmp_itr = step_itr
                 tmp_factor = np.random.rand() * (factor_range.max - factor_range.min) + factor_range.min
 
-            gray_mean = to_mono8(src).data.mean()
+            gray_mean = Convert.to_mono8(src).data.mean()
 
             return Data(
                 data=np.clip(gray_mean * (1.0 - tmp_factor) + src.data * tmp_factor, dst_range.min, dst_range.max).astype(DTYPE_NUMPY[src.type]),
@@ -231,7 +231,7 @@ class Augmentation():
                 tmp_itr = step_itr
                 tmp_factor = np.random.rand() * (factor_range.max - factor_range.min) + factor_range.min
 
-            gray = to(to_mono8(src), src.type)
+            gray = Convert.to(Convert.to_mono8(src), src.type)
 
             return Data(
                 data=np.clip(gray * (1.0 - tmp_factor) + src.data * tmp_factor, dst_range.min, dst_range.max).astype(DTYPE_NUMPY[src.type]),
@@ -251,10 +251,10 @@ class Augmentation():
                 tmp_itr = step_itr
                 tmp_factor = np.random.rand() * (factor_range.max - factor_range.min) + factor_range.min
 
-            hsv = to_hsv8(src)
+            hsv = Convert.to_hsv8(src)
             hsv.data[:,:,0] += np.uint8(tmp_factor * 255)
 
-            return to(hsv, src.type)
+            return Convert.to(hsv, src.type)
 
         return _adjust_hue
 
