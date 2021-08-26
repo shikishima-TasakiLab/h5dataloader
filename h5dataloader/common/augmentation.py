@@ -285,3 +285,31 @@ class Augmentation():
             img = DTYPE_NUMPY[src.type](np.clip(img, self.dst_range.min, self.dst_range.max))
 
             return Data(img, src.type)
+
+    class BilateralBlur():
+        def __init__(self, sigma_spatial: Union[float, ValueRange], sigma_color: float = None, win_size: int = None) -> None:
+            self.sigma_spatial = sigma_spatial
+            self.sigma_color = sigma_color
+            self.win_size = win_size
+
+            self.tmp_itr: int = None
+            self.tmp_sigma_spatial: float = None
+            self.tmp_sigma_color: float = None
+            self.tmp_d: int = None
+
+        def __call__(self, step_itr: int, src: Data) -> Data:
+            if self.tmp_itr != step_itr:
+                self.tmp_itr = step_itr
+                if isinstance(self.sigma_spatial, ValueRange):
+                    self.tmp_sigma_spatial = np.random.rand() * (self.sigma_spatial.max - self.sigma_spatial.min) + self.sigma_spatial.min
+                else:
+                    self.tmp_sigma_spatial = self.sigma_spatial
+
+                self.tmp_sigma_color = src.data.std() if self.sigma_color is None else self.sigma_color
+
+            self.tmp_d = max(5, 2 * int(np.ceil(3 * self.tmp_sigma_spatial)) + 1) if self.win_size is None else self.win_size
+
+            return Data(
+                data=cv2.bilateralFilter(src.data, self.tmp_d, self.sigma_color, self.sigma_spatial),
+                type=src.type
+            )
