@@ -304,10 +304,9 @@ class Augmentation():
                     self.tmp_sigma_spatial = np.random.rand() * (self.sigma_spatial.max - self.sigma_spatial.min) + self.sigma_spatial.min
                 else:
                     self.tmp_sigma_spatial = self.sigma_spatial
+                self.tmp_d = max(5, 2 * int(np.ceil(3 * self.tmp_sigma_spatial)) + 1) if self.win_size is None else self.win_size
 
-                self.tmp_sigma_color = src.data.std() if self.sigma_color is None else self.sigma_color
-
-            self.tmp_d = max(5, 2 * int(np.ceil(3 * self.tmp_sigma_spatial)) + 1) if self.win_size is None else self.win_size
+            self.tmp_sigma_color = src.data.std() if self.sigma_color is None else self.sigma_color
 
             return Data(
                 data=cv2.bilateralFilter(src.data, self.tmp_d, self.sigma_color, self.sigma_spatial),
