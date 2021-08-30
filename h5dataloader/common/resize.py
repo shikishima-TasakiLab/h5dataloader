@@ -1,6 +1,8 @@
 from .structure import *
 
 class Resize():
+    supported = [TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8, TYPE_HSV8, TYPE_DEPTH, TYPE_SEMANTIC2D]
+
     def __init__(self, output_size: Tuple[int, int], interpolation: int = INTER_LINEAR) -> None:
         """Setting up the resize_2d function.
 
@@ -11,8 +13,14 @@ class Resize():
         Return:
             function (step_itr: int, src: Data) -> Data
         """
-        self.output_size = output_size
-        self.interpolation = interpolation
+        self.set_output_size(output_size)
+        self.set_interpolation(interpolation)
+
+    def set_output_size(self, output_size: Tuple[int, int]) -> None:
+        self._output_size = output_size
+
+    def set_interpolation(self, interpolation: int) -> None:
+        self._interpolation = interpolation
 
     def __call__(self, step_itr: int, src: Data) -> Data:
         """Resize an image.
@@ -24,4 +32,4 @@ class Resize():
         Returns:
             Data: Resized data.
         """
-        return Data(data=cv2.resize(src.data, dsize=self.output_size, interpolation=self.interpolation), type=src.type)
+        return Data(data=cv2.resize(src.data, dsize=self._output_size, interpolation=self._interpolation), type=src.type)
