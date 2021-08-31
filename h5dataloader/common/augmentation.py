@@ -412,6 +412,66 @@ class Augmentation():
                 type=src.type
             )
 
+    class GaussianBlur():
+        supported = [TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8]
+
+        def __init__(self, kernel_size: Tuple[int, int] = (0, 0), sigma_x: Union[float, ValueRange] = None, sigma_y: Union[float, ValueRange] = None) -> None:
+            self.set_kernel_size(kernel_size)
+            self.set_sigma(sigma_x, sigma_y)
+
+            self._tmp_itr = None
+            self._tmp_sigma_x = None
+            self._tmp_sigma_y = None
+
+        def set_kernel_size(self, kernel_size: Tuple[int, int]) -> None:
+            if isinstance(kernel_size, tuple) is False:
+                raise TypeError('`kernel_size` must be tuple.')
+            if len(kernel_size) != 2:
+                raise ValueError('`len(kernel_size) != 2`')
+            if isinstance(kernel_size[0], int) is False or isinstance(kernel_size[1], int) is False:
+                raise ValueError('`kernel_size[0]` and `kernel_size[1]` must be ints.')
+
+            self._kernel_size = kernel_size
+
+        def set_sigma(self, sigma_x: Union[float, ValueRange], sigma_y: Union[float, ValueRange] = None) -> None:
+            self._sigma_x = 0.0 if sigma_x is None else sigma_x
+            self._sigma_y = sigma_x if sigma_y is None else sigma_y
+
+            if isinstance(self._sigma_x, ValueRange):
+                self._get_sigma_x = self._get_sigma_x_rand
+            elif isinstance(self._sigma_x, float):
+                self._get_sigma_x = self._get_sigma_x_const
+            else:
+                raise NotImplementedError
+
+            if isinstance(self._sigma_y, ValueRange):
+                self._get_sigma_y = self._get_sigma_y_rand
+            elif isinstance(self._sigma_y, float):
+                self._get_sigma_y = self._get_sigma_y_const
+            else:
+                raise NotImplementedError
+
+        def _get_sigma_x_const(self) -> float:
+            return self._sigma_x
+
+        def _get_sigma_y_const(self) -> float:
+            return self._sigma_y
+
+        def _get_sigma_x_rand(self) -> float:
+            return np.random.rand() * (self._sigma_x.max - self._sigma_x.min) + self._sigma_x.min
+
+        def _get_sigma_y_rand(self) -> float:
+            return np.random.rand() * (self._sigma_y.max - self._sigma_y.min) + self._sigma_y.min
+
+        def __call__(self, step_itr: int, src: Data) -> Data:
+            if self._tmp_itr != step_itr:
+                self._tmp_itr = step_itr
+                self._tmp_sigma_x = self._get_sigma_x()
+                self._tmp_sigma_y = self._get_sigma_y()
+
+            dst = cv2.GaussianBlur(src.data, self._kernel_size, sigmaX=self._tmp_sigma_x, sigmaY=self._tmp_sigma_y)
+            return Data(data=dst, type=src.type)
+
     # class RandomPose():
     #     supported = [TYPE_POSE]
 
