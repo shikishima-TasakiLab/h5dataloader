@@ -32,4 +32,5 @@ class Resize():
         Returns:
             Data: Resized data.
         """
-        return Data(data=cv2.resize(src.data, dsize=self._output_size, interpolation=self._interpolation), type=src.type)
+        dst = src.data if src.data.shape[:2] == self._output_size else cv2.resize(src.data, dsize=self._output_size, interpolation=self._interpolation)
+        return Data(data=dst, type=src.type)

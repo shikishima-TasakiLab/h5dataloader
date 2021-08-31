@@ -9,7 +9,10 @@ class Normalization():
         self.set_norm_range(norm_range)
         self.set_inf(inf)
 
-        if type in [TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8, TYPE_HSV8]:
+        if type in [
+            TYPE_UINT8, TYPE_INT8, TYPE_INT16, TYPE_INT32, TYPE_INT64, TYPE_FLOAT16, TYPE_FLOAT32, TYPE_FLOAT64,
+            TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8, TYPE_HSV8
+        ]:
             self.__call__ = self._norm_default
         elif type in [TYPE_DEPTH]:
             self.__call__ = self._norm_depth
