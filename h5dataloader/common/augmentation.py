@@ -1,6 +1,7 @@
 from typing import NamedTuple
 import numpy as np
 import cv2
+from pointsmap import combineTransforms
 from .structure import *
 from .convert import *
 
@@ -18,22 +19,35 @@ class Augmentation():
         def __init__(
             self, range_angle: ValueRange, range_scale: ValueRange, interpolation = INTER_LINEAR, borderMode = BORDER_CONSTANT, borderValue = 0
         ) -> None:
-            if isinstance(range_angle, ValueRange) is False: raise TypeError('`type(range_angle)` must be ValueRange.')
-            if len(range_angle) != 2: raise ValueError('`len(range_angle)` must be 2.')
-            if range_angle.min > range_angle.max: raise ValueError('`range_angle.min < range_angle.max')
-
-            if isinstance(range_scale, ValueRange) is False: raise TypeError('`type(range_scale)` must be ValueRange.')
-            if len(range_scale) != 2: raise ValueError('`len(range_scale)` must be 2.')
-            if range_scale.min > range_scale.max: raise ValueError('`range_scale.min < range_scale.max')
-
-            self._range_angle = range_angle
-            self._range_scale = range_scale
-            self._interpolation = interpolation
-            self._borderMode = borderMode
-            self._borderValue = borderValue
+            self.set_range_angle(range_angle)
+            self.set_range_scale(range_scale)
+            self.set_interpolation(interpolation)
+            self.set_borderMode(borderMode)
+            self.set_borderValue(borderValue)
 
             self._tmp_itr: int = None
             self._rotmat: np.ndarray = None
+
+        def set_range_angle(self, range_angle: ValueRange) -> None:
+            if isinstance(range_angle, ValueRange) is False: raise TypeError('`type(range_angle)` must be ValueRange.')
+            if len(range_angle) != 2: raise ValueError('`len(range_angle)` must be 2.')
+            if range_angle.min > range_angle.max: raise ValueError('`range_angle.min < range_angle.max')
+            self._range_angle = range_angle
+
+        def set_range_scale(self, range_scale: ValueRange) -> None:
+            if isinstance(range_scale, ValueRange) is False: raise TypeError('`type(range_scale)` must be ValueRange.')
+            if len(range_scale) != 2: raise ValueError('`len(range_scale)` must be 2.')
+            if range_scale.min > range_scale.max: raise ValueError('`range_scale.min < range_scale.max')
+            self._range_scale = range_scale
+
+        def set_interpolation(self, interpolation) -> None:
+            self._interpolation = interpolation
+
+        def set_borderMode(self, borderMode) -> None:
+            self._borderMode = borderMode
+
+        def set_borderValue(self, borderValue) -> None:
+            self._borderValue = borderValue
 
         def __call__(self, step_itr: int, src: Data) -> Data:
             height, width = src.data.shape[:2]
@@ -472,21 +486,40 @@ class Augmentation():
             dst = cv2.GaussianBlur(src.data, self._kernel_size, sigmaX=self._tmp_sigma_x, sigmaY=self._tmp_sigma_y)
             return Data(data=dst, type=src.type)
 
-    # class RandomPose():
-    #     supported = [TYPE_POSE]
+    class RandomPose():
+        supported = [TYPE_POSE]
 
-    #     def __init__(self, range_tr: Tuple[float, float, float], range_rot: float) -> None:
-    #         self.set_range_tr(range_tr)
-    #         self.set_range_rot(range_rot)
+        def __init__(self, range_tr: Tuple[float, float, float], range_rot: float) -> None:
+            self.set_range_tr(range_tr)
+            self.set_range_rot(range_rot)
 
-    #         self._tmp_itr = None
+            self._tmp_itr = None
+            self._tmp_tr = None
+            self._tmp_rot = None
 
-    #     def set_range_tr(self, range_tr: Tuple[float, float, float]) -> None:
-    #         self._range_tr = np.array(range_tr, dtype=np.float32)
+        def set_range_tr(self, range_tr: Tuple[float, float, float]) -> None:
+            self._range_tr = np.array(range_tr, dtype=np.float32)
 
-    #     def set_range_rot(self, range_rot: float) -> None:
-    #         self._range_rot = np.deg2rad(range_rot)
+        def set_range_rot(self, range_rot: float) -> None:
+            self._range_rot = np.deg2rad(range_rot)
 
-    #     def __call__(self, step_itr: int, src: Data) -> Data:
-    #         if self._tmp_itr != step_itr:
-    #             self._tmp_itr = step_itr
+        def _vec2quat(self, vec: np.ndarray, abs: float) -> np.ndarray:
+            h_abs = abs * 0.5
+            xyz: np.ndarray = vec * np.sin(h_abs)
+            return np.append(xyz, np.cos(h_abs))
+
+        def __call__(self, step_itr: int, src: Data) -> Data:
+            if self._tmp_itr != step_itr:
+                self._tmp_itr = step_itr
+                self._tmp_tr = np.random.rand(3) * self._range_tr
+
+                rot_vec: np.ndarray = np.random.rand(3)
+                rot_vec /= np.linalg.norm(rot_vec)
+                rot_abs: float = np.random.rand() * self._range_rot
+                self._tmp_rot = self._vec2quat(rot_vec, rot_abs)
+            translations = [src.data[:3], self._tmp_tr]
+            quaternions = [src.data[-4:], self._tmp_rot]
+
+            tr, rot = combineTransforms(translations=translations, quaternions=quaternions)
+
+            return Data(data=np.concatenate([tr, rot]), type=TYPE_POSE)
