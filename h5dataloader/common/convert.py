@@ -141,7 +141,7 @@ class Convert():
         else:
             raise NotImplementedError
 
-    TO_FUNCTIONS: Dict[str, to_passthrough] = {
+    TO_FUNCTIONS: dict = {
         TYPE_MONO8: to_mono8,
         TYPE_MONO16: to_mono16,
         TYPE_BGR8: to_bgr8,

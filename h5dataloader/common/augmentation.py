@@ -11,7 +11,7 @@ class BoundingBox(NamedTuple):
     x2: int
     y2: int
 
-def augmentation(step_itr: int, src: Data, func_list: List[function]) -> Data:
+def augmentation(step_itr: int, src: Data, func_list: list) -> Data:
     dst: Data = src
 
     for func in func_list:
