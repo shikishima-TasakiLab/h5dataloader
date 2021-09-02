@@ -315,7 +315,7 @@ class Adjust_saturation():
         gray = Convert.to(Convert.to_mono8(src), src.type)
 
         return Data(
-            data=np.clip(np.float32(gray) * (1.0 - self._tmp_factor) + np.float32(src.data) * self._tmp_factor, self._dst_range.min, self._dst_range.max).astype(DTYPE_NUMPY[src.type]),
+            data=np.clip(gray.data * (1.0 - self._tmp_factor) + src.data * self._tmp_factor, self._dst_range.min, self._dst_range.max).astype(DTYPE_NUMPY[src.type]),
             type=src.type
         )
 
