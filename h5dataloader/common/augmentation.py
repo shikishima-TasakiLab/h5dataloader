@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 from pointsmap import combineTransforms
 from .structure import *
-from .convert import *
+from . import convert as Convert
 
 class BoundingBox(NamedTuple):
     x1: int
