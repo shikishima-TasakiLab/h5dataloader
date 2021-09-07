@@ -11,7 +11,7 @@ class BoundingBox(NamedTuple):
     x2: int
     y2: int
 
-def augmentation(step_itr: int, src: Data, func_list: list) -> Data:
+def augmentation(step_itr: Any, src: Data, func_list: list) -> Data:
     dst: Data = src
 
     for func in func_list:
@@ -56,7 +56,7 @@ class Affine_2d():
     def set_borderValue(self, borderValue) -> None:
         self._borderValue = borderValue
 
-    def __call__(self, step_itr: int, src: Data) -> Data:
+    def __call__(self, step_itr: Any, src: Data) -> Data:
         height, width = src.data.shape[:2]
 
         if self._tmp_itr != step_itr:
@@ -105,7 +105,7 @@ class Translation_2d():
     def set_borderValue(self, borderValue) -> None:
         self._borderValue = borderValue
 
-    def __call__(self, step_itr: int, src: Data) -> Data:
+    def __call__(self, step_itr: Any, src: Data) -> Data:
         height, width = src.data.shape[:2]
 
         if self._tmp_itr != step_itr:
@@ -137,7 +137,7 @@ class Flip_2d():
     def set_vflip_rate(self, vflip_rate: float) -> None:
         self._vflip_rate = np.clip(vflip_rate, a_min=0.0, a_max=1.0)
 
-    def __call__(self, step_itr: int, src: Data) -> Data:
+    def __call__(self, step_itr: Any, src: Data) -> Data:
         dst = np.copy(src.data)
 
         if self._tmp_itr != step_itr:
@@ -162,7 +162,7 @@ class Cutout_2d():
         self._tmp_itr: int = None
         self._tmp_bboxes: List[BoundingBox] = []
 
-    def __call__(self, step_itr: int, src: Data) -> Data:
+    def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
             self._tmp_bboxes = []
@@ -193,7 +193,7 @@ class Random_erasing_2d():
         self._tmp_itr: int = None
         self._tmp_bboxes: List[BoundingBox] = []
 
-    def __call__(self, step_itr: int, src: Data) -> Data:
+    def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
 
@@ -256,7 +256,7 @@ class Adjust_brightness():
     def set_dst_range(self, dst_range: ValueRange) -> None:
         self._dst_range = dst_range
 
-    def __call__(self, step_itr: int, src: Data) -> Data:
+    def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
             self._tmp_factor = np.random.rand() * (self._factor_range.max - self._factor_range.min) + self._factor_range.min
@@ -279,7 +279,7 @@ class Adjust_contrast():
     def set_dst_range(self, dst_range: ValueRange) -> None:
         self._dst_range = dst_range
 
-    def __call__(self, step_itr: int, src: Data) -> Data:
+    def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
             self._tmp_factor = np.random.rand() * (self._factor_range.max - self._factor_range.min) + self._factor_range.min
@@ -307,7 +307,7 @@ class Adjust_saturation():
     def set_dst_range(self, dst_range: ValueRange) -> None:
         self._dst_range = dst_range
 
-    def __call__(self, step_itr: int, src: Data) -> Data:
+    def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
             self._tmp_factor = np.random.rand() * (self._factor_range.max - self._factor_range.min) + self._factor_range.min
@@ -331,7 +331,7 @@ class Adjust_hue():
     def set_factor_range(self, factor_range: ValueRange) -> None:
         self._factor_range = factor_range
 
-    def __call__(self, step_itr: int, src: Data) -> Data:
+    def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
             self._tmp_factor = np.random.rand() * (self._factor_range.max - self._factor_range.min) + self._factor_range.min
@@ -366,7 +366,7 @@ class Adjust_gamma():
     def set_dst_range(self, dst_range: ValueRange) -> None:
         self._dst_range = dst_range
 
-    def __call__(self, step_itr: int, src: Data) -> Data:
+    def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
             self._tmp_gamma = np.random.rand() * (self._gamma_range.max - self._gamma_range.min) + self._gamma_range.min
@@ -421,7 +421,7 @@ class BilateralBlur():
     def _get_sigma_color_const(self, src: np.ndarray) -> float:
         return self._sigma_color
 
-    def __call__(self, step_itr: int, src: Data) -> Data:
+    def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
             self._tmp_sigma_spatial = self._get_sigma_spatial()
@@ -484,7 +484,7 @@ class GaussianBlur():
     def _get_sigma_y_rand(self) -> float:
         return np.random.rand() * (self._sigma_y.max - self._sigma_y.min) + self._sigma_y.min
 
-    def __call__(self, step_itr: int, src: Data) -> Data:
+    def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
             self._tmp_sigma_x = self._get_sigma_x()
@@ -492,6 +492,27 @@ class GaussianBlur():
 
         dst = cv2.GaussianBlur(src.data, self._kernel_size, sigmaX=self._tmp_sigma_x, sigmaY=self._tmp_sigma_y)
         return Data(data=dst, type=src.type)
+
+class Equalize():
+    supported = [TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8, TYPE_HSV8, TYPE_YUV8]
+
+    def __init__(self, rate: float) -> None:
+        self._rate = np.clip(rate, a_min=0.0, a_max=1.0)
+        self._tmp_itr = None
+        self._do = None
+
+    def __call__(self, step_itr: Any, src: Data) -> Data:
+        if self._tmp_itr != step_itr:
+            self._tmp_itr = step_itr
+            self._do = np.random.rand() < self._rate
+
+        if self._do is True:
+            yuv = Convert.to_yuv8(src)
+            yuv.data[:,:,0] = cv2.equalizeHist(yuv.data[:,:,0])
+            dst = Convert.to(yuv, src.type)
+        else:
+            dst = src
+        return dst
 
 class RandomPose():
     supported = [TYPE_POSE]
@@ -515,7 +536,7 @@ class RandomPose():
         xyz: np.ndarray = vec * np.sin(h_abs)
         return np.append(xyz, np.cos(h_abs))
 
-    def __call__(self, step_itr: int, src: Data) -> Data:
+    def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
             self._tmp_tr = np.random.rand(3) * self._range_tr
