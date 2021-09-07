@@ -17,6 +17,8 @@ def to_mono8(src: Data) -> Data:
         return Data(cv2.cvtColor(src.data, cv2.COLOR_RGBA2GRAY), TYPE_MONO8)
     elif src.type == TYPE_HSV8:
         return Data(src.data[:, :, 2], TYPE_MONO8)
+    elif src.type == TYPE_YUV8:
+        return Data(src.data[:, :, 0], TYPE_MONO8)
     else:
         raise NotImplementedError
 
@@ -34,6 +36,8 @@ def to_mono16(src: Data) -> Data:
         dst = cv2.cvtColor(src.data, cv2.COLOR_RGBA2GRAY)
     elif src.type == TYPE_HSV8:
         dst = np.copy(src.data[:,:,2])
+    elif src.type == TYPE_YUV8:
+        dst = np.copy(src.data[:,:,0])
     else:
         raise NotImplementedError
     return Data(np.uint16(dst) * 257, TYPE_MONO16)
@@ -52,6 +56,8 @@ def to_bgr8(src: Data) -> Data:
         return Data(cv2.cvtColor(src.data, cv2.COLOR_RGBA2BGR), TYPE_BGR8)
     elif src.type == TYPE_HSV8:
         return Data(cv2.cvtColor(src.data, cv2.COLOR_HSV2BGR_FULL), TYPE_BGR8)
+    elif src.type == TYPE_YUV8:
+        return Data(cv2.cvtColor(src.data, cv2.COLOR_YCrCb2BGR), TYPE_BGR8)
     else:
         raise NotImplementedError
 
@@ -69,6 +75,8 @@ def to_rgb8(src: Data) -> Data:
         return Data(cv2.cvtColor(src.data, cv2.COLOR_RGBA2RGB), TYPE_RGB8)
     elif src.type == TYPE_HSV8:
         return Data(cv2.cvtColor(src.data, cv2.COLOR_HSV2RGB_FULL), TYPE_RGB8)
+    elif src.type == TYPE_YUV8:
+        return Data(cv2.cvtColor(src.data, cv2.COLOR_YCrCb2RGB), TYPE_RGB8)
     else:
         raise NotImplementedError
 
@@ -87,6 +95,11 @@ def to_bgra8(src: Data) -> Data:
     elif src.type == TYPE_HSV8:
         h, w = src.data.shape[:2]
         bgr = cv2.cvtColor(src.data, cv2.COLOR_HSV2BGR_FULL)
+        alpha = np.full((h, w, 1), 255, dtype=np.uint8)
+        return Data(np.concatenate([bgr, alpha], axis=2), TYPE_BGRA8)
+    elif src.type == TYPE_YUV8:
+        h, w = src.data.shape[:2]
+        bgr = cv2.cvtColor(src.data, cv2.COLOR_YCrCb2BGR)
         alpha = np.full((h, w, 1), 255, dtype=np.uint8)
         return Data(np.concatenate([bgr, alpha], axis=2), TYPE_BGRA8)
     else:
@@ -109,6 +122,11 @@ def to_rgba8(src: Data) -> Data:
         rgb = cv2.cvtColor(src.data, cv2.COLOR_HSV2RGB_FULL)
         alpha = np.full((h, w, 1), 255, dtype=np.uint8)
         return Data(np.concatenate([rgb, alpha], axis=2), TYPE_RGBA8)
+    elif src.type == TYPE_YUV8:
+        h, w = src.data.shape[:2]
+        rgb = cv2.cvtColor(src.data, cv2.COLOR_YCrCb2RGB)
+        alpha = np.full((h, w, 1), 255, dtype=np.uint8)
+        return Data(np.concatenate([rgb, alpha], axis=2), TYPE_RGBA8)
     else:
         raise NotImplementedError
 
@@ -128,6 +146,29 @@ def to_hsv8(src: Data) -> Data:
         return Data(cv2.cvtColor(src.data[:,:,:3], cv2.COLOR_BGR2HSV_FULL), TYPE_HSV8)
     elif src.type in [TYPE_RGB8, TYPE_RGBA8]:
         return Data(cv2.cvtColor(src.data[:,:,:3], cv2.COLOR_RGB2HSV_FULL), TYPE_HSV8)
+    elif src.type == TYPE_YUV8:
+        return to_hsv8(to_bgr8(src))
+    else:
+        raise NotImplementedError
+
+def to_yuv8(src: Data) -> Data:
+    if src.type == TYPE_YUV8: return src
+    elif src.type == TYPE_MONO8:
+        h, w = src.data.shape[:2]
+        dst = np.zeros((h, w, 3), dtype=np.uint8)
+        dst[:, :, 0] = src.data
+        return Data(dst, TYPE_YUV8)
+    elif src.type == TYPE_MONO16:
+        h, w = src.data.shape[:2]
+        dst = np.zeros((h, w, 3), dtype=np.uint8)
+        dst[:, :, 0] = np.uint8(np.copy(src.data) / 257.)
+        return Data(dst, TYPE_YUV8)
+    elif src.type in [TYPE_BGR8, TYPE_BGRA8]:
+        return Data(cv2.cvtColor(src.data[:,:,:3], cv2.COLOR_BGR2YCrCb), TYPE_HSV8)
+    elif src.type in [TYPE_RGB8, TYPE_RGBA8]:
+        return Data(cv2.cvtColor(src.data[:,:,:3], cv2.COLOR_RGB2YCrCb), TYPE_HSV8)
+    elif src.type == TYPE_HSV8:
+        return to_yuv8(to_bgr8(src))
     else:
         raise NotImplementedError
 
@@ -138,7 +179,8 @@ TO_FUNCTIONS: dict = {
     TYPE_RGB8: to_rgb8,
     TYPE_BGRA8: to_bgra8,
     TYPE_RGBA8: to_rgba8,
-    TYPE_HSV8: to_hsv8
+    TYPE_HSV8: to_hsv8,
+    TYPE_YUV8: to_yuv8
 }
 
 def to(src: Data, type: str) -> Data:
