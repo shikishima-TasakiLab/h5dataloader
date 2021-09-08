@@ -514,6 +514,59 @@ class Equalize():
             dst = src
         return dst
 
+class AutoContrast():
+    supported = [TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8, TYPE_HSV8, TYPE_YUV8]
+
+    def __init__(self, rate: float, cutoff: Union[float, Tuple[float, float]]=0.0) -> None:
+        if isinstance(cutoff, (float, tuple)) is False: raise TypeError
+
+        self._rate: float = np.clip(rate, a_min=0.0, a_max=1.0)
+        cutoff = (cutoff, cutoff) if isinstance(cutoff, float) else cutoff
+        self._cutoff: np.ndarray = np.clip(cutoff, a_min=0.0, a_max=1.0)
+        self._cutoff[1] = 1.0 - self._cutoff[1]
+        if self._cutoff[0] > self._cutoff[1]: raise ValueError
+
+        self._tmp_itr = None
+        self._do = None
+
+    def __call__(self, step_itr: Any, src: Data) -> Data:
+        if self._tmp_itr != step_itr:
+            self._tmp_itr = step_itr
+            self._do = np.random.rand() < self._rate
+
+        if self._do is True:
+            yuv = Convert.to_yuv8(src)
+
+            hist: np.ndarray
+            hist, _ = np.histogram(yuv.data[:,:,0], bins=256, range=[0, 256])
+            cdf: np.ndarray = np.cumsum(hist)
+            cdf_max = cdf.max()
+            cdf_m: np.ma.MaskedArray = np.ma.masked_less_equal(cdf, self._cutoff[0] * cdf_max)
+            cdf_m: np.ma.MaskedArray = np.ma.masked_greater_equal(cdf_m, self._cutoff[1] * cdf_max)
+            imin = cdf_m.argmin()
+            imax = cdf_m.argmax()
+            tr: np.ndarray = np.clip((np.arange(256) - imin) * 255 / (imax - imin), 0, 255).astype(np.uint8)
+            yuv.data[:,:,0] = tr[yuv.data[:,:,0]]
+            dst = Convert.to(yuv, src.type)
+        else:
+            dst = src
+        return dst
+
+class Invert():
+    supported = [TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8, TYPE_HSV8, TYPE_YUV8]
+
+    def __init__(self, rate: float) -> None:
+        self._rate = np.clip(rate, a_min=0.0, a_max=1.0)
+        self._tmp_itr = None
+        self._do = None
+
+    def __call__(self, step_itr: Any, src: Data) -> Data:
+        if self._tmp_itr != step_itr:
+            self._tmp_itr = step_itr
+            self._do = np.random.rand() < self._rate
+
+        return Data(data=np.iinfo(src.data.dtype).max - src.data, type=src.type) if self._do is True else src
+
 class RandomPose():
     supported = [TYPE_POSE]
 
