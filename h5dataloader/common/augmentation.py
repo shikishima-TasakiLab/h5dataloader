@@ -567,6 +567,55 @@ class Invert():
 
         return Data(data=np.iinfo(src.data.dtype).max - src.data, type=src.type) if self._do is True else src
 
+class Solarize():
+    supported = [TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8]
+
+    def __init__(self, rate: float, threshold: int = 128) -> None:
+        self._rate = np.clip(rate, a_min=0.0, a_max=1.0)
+        self._tmp_itr = None
+        self._do = None
+        self._threshold = threshold
+
+    def __call__(self, step_itr: Any, src: Data) -> Data:
+        if self._tmp_itr != step_itr:
+            self._tmp_itr = step_itr
+            self._do = np.random.rand() < self._rate
+
+        if self._do is True:
+            dst = Data(
+                data=np.where(src.data < self._threshold, src.data, np.iinfo(src.data.dtype).max - src.data),
+                type=src.type
+            )
+        else:
+            dst = src
+        return dst
+
+class Posterize():
+    supported = [TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8]
+
+    def __init__(self, rate: float, n: int = 2) -> None:
+        self._rate = np.clip(rate, a_min=0.0, a_max=1.0)
+        self._tmp_itr = None
+        self._do = None
+        self._n = n
+
+    def __call__(self, step_itr: Any, src: Data) -> Data:
+        if self._tmp_itr != step_itr:
+            self._tmp_itr = step_itr
+            self._do = np.random.rand() < self._rate
+
+        if self._do is True:
+            data_max = np.iinfo(src.data.dtype).max
+            ibins = np.linspace(0, data_max, self._n + 1)
+            obins = np.linspace(0, data_max, self._n)
+            num = np.digitize(np.arange(data_max + 1), ibins) - 1
+            num[-1] = self._n - 1
+            tr = np.array(obins[num], dtype=np.uint8)
+            dst = Data(data=tr[src.data], type=src.type)
+        else:
+            dst = src
+        return dst
+
 class RandomPose():
     supported = [TYPE_POSE]
 
