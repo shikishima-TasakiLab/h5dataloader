@@ -164,9 +164,9 @@ def to_yuv8(src: Data) -> Data:
         dst[:, :, 0] = np.uint8(np.copy(src.data) / 257.)
         return Data(dst, TYPE_YUV8)
     elif src.type in [TYPE_BGR8, TYPE_BGRA8]:
-        return Data(cv2.cvtColor(src.data[:,:,:3], cv2.COLOR_BGR2YCrCb), TYPE_HSV8)
+        return Data(cv2.cvtColor(src.data[:,:,:3], cv2.COLOR_BGR2YCrCb), TYPE_YUV8)
     elif src.type in [TYPE_RGB8, TYPE_RGBA8]:
-        return Data(cv2.cvtColor(src.data[:,:,:3], cv2.COLOR_RGB2YCrCb), TYPE_HSV8)
+        return Data(cv2.cvtColor(src.data[:,:,:3], cv2.COLOR_RGB2YCrCb), TYPE_YUV8)
     elif src.type == TYPE_HSV8:
         return to_yuv8(to_bgr8(src))
     else:
