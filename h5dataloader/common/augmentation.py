@@ -499,14 +499,14 @@ class Equalize():
     def __init__(self, rate: float) -> None:
         self._rate = np.clip(rate, a_min=0.0, a_max=1.0)
         self._tmp_itr = None
-        self._do = None
+        self._tmp_do = None
 
     def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
-            self._do = np.random.rand() < self._rate
+            self._tmp_do = np.random.rand() < self._rate
 
-        if self._do is True:
+        if self._tmp_do is True:
             yuv = Convert.to_yuv8(src)
             yuv.data[:,:,0] = cv2.equalizeHist(yuv.data[:,:,0])
             dst = Convert.to(yuv, src.type)
@@ -527,14 +527,14 @@ class AutoContrast():
         if self._cutoff[0] > self._cutoff[1]: raise ValueError
 
         self._tmp_itr = None
-        self._do = None
+        self._tmp_do = None
 
     def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
-            self._do = np.random.rand() < self._rate
+            self._tmp_do = np.random.rand() < self._rate
 
-        if self._do is True:
+        if self._tmp_do is True:
             yuv = Convert.to_yuv8(src)
 
             hist: np.ndarray
@@ -558,14 +558,14 @@ class Invert():
     def __init__(self, rate: float) -> None:
         self._rate = np.clip(rate, a_min=0.0, a_max=1.0)
         self._tmp_itr = None
-        self._do = None
+        self._tmp_do = None
 
     def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
-            self._do = np.random.rand() < self._rate
+            self._tmp_do = np.random.rand() < self._rate
 
-        return Data(data=np.iinfo(src.data.dtype).max - src.data, type=src.type) if self._do is True else src
+        return Data(data=np.iinfo(src.data.dtype).max - src.data, type=src.type) if self._tmp_do is True else src
 
 class Solarize():
     supported = [TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8]
@@ -573,15 +573,15 @@ class Solarize():
     def __init__(self, rate: float, threshold: int = 128) -> None:
         self._rate = np.clip(rate, a_min=0.0, a_max=1.0)
         self._tmp_itr = None
-        self._do = None
+        self._tmp_do = None
         self._threshold = threshold
 
     def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
-            self._do = np.random.rand() < self._rate
+            self._tmp_do = np.random.rand() < self._rate
 
-        if self._do is True:
+        if self._tmp_do is True:
             dst = Data(
                 data=np.where(src.data < self._threshold, src.data, np.iinfo(src.data.dtype).max - src.data),
                 type=src.type
@@ -593,23 +593,39 @@ class Solarize():
 class Posterize():
     supported = [TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8]
 
-    def __init__(self, rate: float, n: int = 2) -> None:
+    def __init__(self, rate: float, n: Union[int, ValueRange] = 2) -> None:
+        """Posterize
+
+        Args:
+            rate (float): Percentage to be executed. [0.0, 1.0]
+            n (Union[int, ValueRange], optional): Number of divisions. If given as a ValueRange type, it is determined randomly in the range [min,max). Defaults to 2.
+        """
         self._rate = np.clip(rate, a_min=0.0, a_max=1.0)
-        self._tmp_itr = None
-        self._do = None
         self._n = n
+        self._get_n = self._get_n_random if isinstance(n, ValueRange) else self._get_n_const
+
+        self._tmp_itr = None
+        self._tmp_do = None
+        self._tmp_n = None
+
+    def _get_n_const(self) -> int:
+        return self._n
+
+    def _get_n_random(self) -> int:
+        return np.random.randint(self._n.min, self._n.max)
 
     def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
-            self._do = np.random.rand() < self._rate
+            self._tmp_n = self._get_n()
+            self._tmp_do = np.random.rand() < self._rate
 
-        if self._do is True:
+        if self._tmp_do is True:
             data_max = np.iinfo(src.data.dtype).max
-            ibins = np.linspace(0, data_max, self._n + 1)
-            obins = np.linspace(0, data_max, self._n)
+            ibins = np.linspace(0, data_max, self._tmp_n + 1)
+            obins = np.linspace(0, data_max, self._tmp_n)
             num = np.digitize(np.arange(data_max + 1), ibins) - 1
-            num[-1] = self._n - 1
+            num[-1] = self._tmp_n - 1
             tr = np.array(obins[num], dtype=np.uint8)
             dst = Data(data=tr[src.data], type=src.type)
         else:
