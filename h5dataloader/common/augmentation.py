@@ -243,41 +243,35 @@ class _Bbox_masking():
 class Adjust_brightness():
     supported = [TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8]
 
-    def __init__(self, factor_range: ValueRange = ValueRange(0.5, 1.5), dst_range: ValueRange = ValueRange(0, 255)) -> None:
+    def __init__(self, factor_range: ValueRange = ValueRange(0.5, 1.5)) -> None:
         self.set_factor_range(factor_range)
-        self.set_dst_range(dst_range)
 
         self._tmp_itr: int = None
         self._tmp_factor: float = None
 
     def set_factor_range(self, factor_range: ValueRange) -> None:
         self._factor_range = factor_range
-
-    def set_dst_range(self, dst_range: ValueRange) -> None:
-        self._dst_range = dst_range
 
     def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
             self._tmp_factor = np.random.rand() * (self._factor_range.max - self._factor_range.min) + self._factor_range.min
 
-        return Data(np.clip(src.data * self._tmp_factor, self._dst_range.min, self._dst_range.max).astype(DTYPE_NUMPY[src.type]), src.type)
+        dst_range = np.iinfo(src.data.dtype)
+
+        return Data(np.clip(src.data * self._tmp_factor, dst_range.min, dst_range.max).astype(src.data.dtype), src.type)
 
 class Adjust_contrast():
     supported = [TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8]
 
-    def __init__(self, factor_range: ValueRange = ValueRange(0.5, 1.5), dst_range: ValueRange = ValueRange(0, 255)) -> None:
+    def __init__(self, factor_range: ValueRange = ValueRange(0.5, 1.5)) -> None:
         self.set_factor_range(factor_range)
-        self.set_dst_range(dst_range)
 
         self._tmp_itr: int = None
         self._tmp_factor: float = None
 
     def set_factor_range(self, factor_range: ValueRange) -> None:
         self._factor_range = factor_range
-
-    def set_dst_range(self, dst_range: ValueRange) -> None:
-        self._dst_range = dst_range
 
     def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
@@ -285,18 +279,20 @@ class Adjust_contrast():
             self._tmp_factor = np.random.rand() * (self._factor_range.max - self._factor_range.min) + self._factor_range.min
 
         gray_mean = Convert.to_mono8(src).data.mean()
+        dst_range = np.iinfo(src.data.dtype)
 
         return Data(
-            data=np.clip(gray_mean * (1.0 - self._tmp_factor) + src.data * self._tmp_factor, self._dst_range.min, self._dst_range.max).astype(DTYPE_NUMPY[src.type]),
+            data=np.clip(gray_mean * (1.0 - self._tmp_factor) + src.data * self._tmp_factor, dst_range.min, dst_range.max).astype(src.data.dtype),
             type=src.type
         )
 
-class Adjust_saturation():
+class Adjust_sharpness():
     supported = [TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8]
 
-    def __init__(self, factor_range: ValueRange = ValueRange(0.5, 1.5), dst_range: ValueRange = ValueRange(0, 255)) -> None:
+    def __init__(self, factor_range: ValueRange = ValueRange(0.5, 1.5)) -> None:
         self.set_factor_range(factor_range)
-        self.set_dst_range(dst_range)
+
+        self._kernel = np.array([[1.0, 1.0, 1.0], [1.0, 5.0, 1.0], [1.0, 1.0, 1.0]], dtype=np.float)
 
         self._tmp_itr: int = None
         self._tmp_factor: float = None
@@ -304,8 +300,30 @@ class Adjust_saturation():
     def set_factor_range(self, factor_range: ValueRange) -> None:
         self._factor_range = factor_range
 
-    def set_dst_range(self, dst_range: ValueRange) -> None:
-        self._dst_range = dst_range
+    def __call__(self, step_itr: Any, src: Data) -> Data:
+        if self._tmp_itr != step_itr:
+            self._tmp_itr = step_itr
+            self._tmp_factor = np.random.rand() * (self._factor_range.max - self._factor_range.min) + self._factor_range.min
+
+        smoothed = cv2.filter2D(src.data, -1, self._kernel)
+        dst_range = np.iinfo(src.data.dtype)
+
+        return Data(
+            data=np.clip(smoothed * (1.0 - self._tmp_factor) + src.data * self._tmp_factor, dst_range.min, dst_range.max).astype(src.data.dtype),
+            type=src.type
+        )
+
+class Adjust_saturation():
+    supported = [TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8]
+
+    def __init__(self, factor_range: ValueRange = ValueRange(0.5, 1.5)) -> None:
+        self.set_factor_range(factor_range)
+
+        self._tmp_itr: int = None
+        self._tmp_factor: float = None
+
+    def set_factor_range(self, factor_range: ValueRange) -> None:
+        self._factor_range = factor_range
 
     def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
@@ -313,9 +331,10 @@ class Adjust_saturation():
             self._tmp_factor = np.random.rand() * (self._factor_range.max - self._factor_range.min) + self._factor_range.min
 
         gray = Convert.to(Convert.to_mono8(src), src.type)
+        dst_range = np.iinfo(src.data.dtype)
 
         return Data(
-            data=np.clip(gray.data * (1.0 - self._tmp_factor) + src.data * self._tmp_factor, self._dst_range.min, self._dst_range.max).astype(DTYPE_NUMPY[src.type]),
+            data=np.clip(gray.data * (1.0 - self._tmp_factor) + src.data * self._tmp_factor, dst_range.min, dst_range.max).astype(src.data.dtype),
             type=src.type
         )
 
@@ -345,11 +364,10 @@ class Adjust_gamma():
     supported = [TYPE_MONO8, TYPE_MONO16, TYPE_BGR8, TYPE_RGB8, TYPE_BGRA8, TYPE_RGBA8]
 
     def __init__(
-        self, gamma_range: ValueRange = ValueRange(0.5, 1.5), gain_range: ValueRange = ValueRange(0.5, 1.5), dst_range: ValueRange = ValueRange(0, 255)
+        self, gamma_range: ValueRange = ValueRange(0.5, 1.5), gain_range: ValueRange = ValueRange(0.5, 1.5)
     ) -> None:
         self.set_gamma_range(gamma_range)
         self.set_gain_range(gain_range)
-        self.set_dst_range(dst_range)
 
         self._tmp_itr: int = None
         self._tmp_gamma: float = None
@@ -363,18 +381,17 @@ class Adjust_gamma():
             raise ValueError('`gain_range.min >= 0.0`, `gain_range.max >= 0.0`')
         self._gain_range = gain_range
 
-    def set_dst_range(self, dst_range: ValueRange) -> None:
-        self._dst_range = dst_range
-
     def __call__(self, step_itr: Any, src: Data) -> Data:
         if self._tmp_itr != step_itr:
             self._tmp_itr = step_itr
             self._tmp_gamma = np.random.rand() * (self._gamma_range.max - self._gamma_range.min) + self._gamma_range.min
             self._tmp_gain = np.random.rand() * (self._gain_range.max - self._gain_range.min) + self._gain_range.min
 
+        dst_range = np.iinfo(src.data.dtype)
+
         img = np.float32(src.data)
-        img = self._dst_range.max * self._tmp_gain * np.power(img / self._dst_range.max, self._tmp_gamma)
-        img = DTYPE_NUMPY[src.type](np.clip(img, self._dst_range.min, self._dst_range.max))
+        img = dst_range.max * self._tmp_gain * np.power(img / dst_range.max, self._tmp_gamma)
+        img = np.clip(img, dst_range.min, dst_range.max).astype(src.data.dtype)
 
         return Data(img, src.type)
 
